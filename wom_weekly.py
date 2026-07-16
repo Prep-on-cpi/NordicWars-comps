@@ -19,6 +19,9 @@ GROUP_ID = 7753
 VERIFICATION_CODE = "996-370-037"  
 HISTORY_FILE = "wom_history.txt"
 
+# --- DISCORD WEBHOOK URL ---
+DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1526354985950904462/w92ymtbU-qFmnPBdj_9GG5WDW8djFlGKHLYq3w5GNYbTNKBtdvCuAXKiSQImD3JOYSSN"
+
 # --- POOL OF SKILLS TO RANDOMIZE ---
 SKILL_POOL = [
     "attack", "strength", "defence", "ranged", "prayer", 
@@ -68,18 +71,59 @@ def generate_unique_single_skills():
     # Remove last week's skills from the available pool
     available_pool = [skill for skill in SKILL_POOL if skill not in last_week]
 
-    # In case history file corruption leaves us with too few items, fall back to pool
     if len(available_pool) < 2:
         available_pool = SKILL_POOL
 
     # Draw two completely unique metrics from the filtered pool
     selected_skills = random.sample(available_pool, 2)
+    skill_a = selected_skills[0]
+    skill_b = selected_skills[1]
     
     # Save selections to history file before returning
-    save_current_skills(selected_skills[0], selected_skills[1])
+    save_current_skills(skill_a, skill_b)
 
     # Return them packaged as separate single-item lists required by WOM
-    return [selected_skills[0]], [selected_skills[1]]
+    return [skill_a], [skill_b]
+
+
+def send_discord_notification(comp_a_title, comp_a_id, comp_a_metric, comp_b_title, id_b, comp_b_metric):
+    """Sends a cleanly formatted embed message to your Discord channel."""
+    payload = {
+        "username": "NordicWars Automation",
+        "avatar_url": "https://wiseoldman.net",
+        "embeds": [
+            {
+                "title": "⚔️ Weekly Clan Competitions Created! ⚔️",
+                "description": "Two new Skill of the Week (SOTW) competitions have been automatically scheduled. They will go live this **Saturday at 10:00 PM UTC**!",
+                "color": 15158332,  # Crimson color code
+                "fields": [
+                    {
+                        "name": f"🏆 {comp_a_title}",
+                        "value": f"**Tracked Skill:** {comp_a_metric[0].title()}\n🔗 [View Leaderboard](https://wiseoldman.net{comp_a_id})",
+                        "inline": False
+                    },
+                    {
+                        "name": f"🏆 {comp_b_title}",
+                        "value": f"**Tracked Skill:** {comp_b_metric[0].title()}\n🔗 [View Leaderboard](https://wiseoldman.net{id_b})",
+                        "inline": False
+                    }
+                ],
+                "footer": {
+                    "text": "Indefinite Automation Pipeline • Powered by Wise Old Man API"
+                },
+                "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
+            }
+        ]
+    }
+
+    try:
+        response = requests.post(DISCORD_WEBHOOK_URL, json=payload, timeout=10)
+        if response.status_code in:
+            logging.info("✅ Discord notification sent successfully!")
+        else:
+            logging.error(f"❌ Discord Webhook failed with status: {response.status_code}")
+    except Exception as e:
+        logging.error(f"❌ Failed to dispatch Discord Webhook: {e}")
 
 
 def send_creation_request(title, metrics_list):
@@ -110,13 +154,15 @@ def send_creation_request(title, metrics_list):
         if response.status_code == 201:
             data = response.json()
             logging.info(f"✅ Created successfully: {data['title']}")
-            logging.info(f"🔗 Link: https://wiseoldman.net{data['id']}")
+            return data['title'], data['id']
         else:
             logging.error(f"❌ API Rejected '{title}'. Status: {response.status_code}")
             logging.error(f"Response: {response.text}")
+            return None, None
 
     except requests.exceptions.RequestException as e:
         logging.error(f"❌ Network error occurred for '{title}': {e}")
+        return None, None
 
 
 def main():
@@ -124,10 +170,14 @@ def main():
     comp_a_skill, comp_b_skill = generate_unique_single_skills()
     
     # 2. Run Competition A with its single random skill
-    send_creation_request("SOTW payout 1m A", comp_a_skill)
+    title_a, id_a = send_creation_request("SOTW payout 1m A", comp_a_skill)
     
     # 3. Run Competition B with a different single random skill
-    send_creation_request("SOTW payout 1m B", comp_b_skill)
+    title_b, id_b = send_creation_request("SOTW payout 1m B", comp_b_skill)
+
+    # 4. If both competitions successfully generated, trigger Discord notification
+    if id_a and id_b:
+        send_discord_notification(title_a, id_a, comp_a_skill, title_b, id_b, comp_b_skill)
 
 
 if __name__ == "__main__":
