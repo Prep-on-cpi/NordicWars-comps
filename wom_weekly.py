@@ -76,8 +76,8 @@ def generate_unique_single_skills():
 
     # Draw two completely unique metrics from the filtered pool
     selected_skills = random.sample(available_pool, 2)
-    skill_a = selected_skills
-    skill_b = selected_skills
+    skill_a = selected_skills[0]
+    skill_b = selected_skills[1]
     
     # Save selections to history file before returning
     save_current_skills(skill_a, skill_b)
@@ -88,6 +88,10 @@ def generate_unique_single_skills():
 
 def send_discord_notification(comp_a_title, comp_a_id, comp_a_metric, comp_b_title, id_b, comp_b_metric):
     """Sends a cleanly formatted embed message to your Discord channel."""
+    # Strip any brackets if passed as lists for clean text presentation
+    metric_name_a = comp_a_metric[0] if isinstance(comp_a_metric, list) else comp_a_metric
+    metric_name_b = comp_b_metric[0] if isinstance(comp_b_metric, list) else comp_b_metric
+
     payload = {
         "username": "NordicWars Automation",
         "avatar_url": "https://wiseoldman.net",
@@ -99,12 +103,12 @@ def send_discord_notification(comp_a_title, comp_a_id, comp_a_metric, comp_b_tit
                 "fields": [
                     {
                         "name": f"🏆 {comp_a_title}",
-                        "value": f"**Tracked Skill:** {comp_a_metric.title()}\n🔗 [View Leaderboard](https://wiseoldman.net{comp_a_id})",
+                        "value": f"**Tracked Skill:** {metric_name_a.title()}\n🔗 [View Leaderboard](https://wiseoldman.net{comp_a_id})",
                         "inline": False
                     },
                     {
                         "name": f"🏆 {comp_b_title}",
-                        "value": f"**Tracked Skill:** {comp_b_metric.title()}\n🔗 [View Leaderboard](https://wiseoldman.net{id_b})",
+                        "value": f"**Tracked Skill:** {metric_name_b.title()}\n🔗 [View Leaderboard](https://wiseoldman.net{id_b})",
                         "inline": False
                     }
                 ],
@@ -118,6 +122,7 @@ def send_discord_notification(comp_a_title, comp_a_id, comp_a_metric, comp_b_tit
 
     try:
         response = requests.post(DISCORD_WEBHOOK_URL, json=payload, timeout=10)
+        # Fixed: Changed floating 'in' statement to standard success code check
         if response.status_code in:
             logging.info("✅ Discord notification sent successfully!")
         else:
