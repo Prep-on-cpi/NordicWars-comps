@@ -1,2 +1,2 @@
-ranged
-defence
+hitpoints
+magic
