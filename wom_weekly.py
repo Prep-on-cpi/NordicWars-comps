@@ -88,7 +88,7 @@ def generate_unique_single_skills():
 
 def send_discord_notification(comp_a_title, comp_a_id, comp_a_metric, comp_b_title, id_b, comp_b_metric):
     """Sends a cleanly formatted embed message to your Discord channel."""
-    # Strip any brackets if passed as lists for clean text presentation
+    # Strip any list brackets for clean text presentation in the Discord UI
     metric_name_a = comp_a_metric[0] if isinstance(comp_a_metric, list) else comp_a_metric
     metric_name_b = comp_b_metric[0] if isinstance(comp_b_metric, list) else comp_b_metric
 
@@ -122,8 +122,8 @@ def send_discord_notification(comp_a_title, comp_a_id, comp_a_metric, comp_b_tit
 
     try:
         response = requests.post(DISCORD_WEBHOOK_URL, json=payload, timeout=10)
-        # Fixed: Changed floating 'in' statement to standard success code check
-        if response.status_code in:
+        # Fixed: Changed floating 'in' statement to clear range-based logical check
+        if 200 <= response.status_code < 300:
             logging.info("✅ Discord notification sent successfully!")
         else:
             logging.error(f"❌ Discord Webhook failed with status: {response.status_code}")
