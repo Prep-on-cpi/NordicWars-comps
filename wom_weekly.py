@@ -74,7 +74,7 @@ def generate_unique_single_skills():
     if len(available_pool) < 2:
         available_pool = SKILL_POOL
 
-    # Draw two completely unique metrics from the filtered pool
+    # Draw two completely unique individual string skills from the filtered pool
     selected_skills = random.sample(available_pool, 2)
     skill_a = selected_skills[0]
     skill_b = selected_skills[1]
@@ -83,15 +83,11 @@ def generate_unique_single_skills():
     save_current_skills(skill_a, skill_b)
 
     # Return them packaged as separate single-item lists required by WOM
-    return [skill_a], [skill_b]
+    return skill_a, skill_b
 
 
-def send_discord_notification(comp_a_title, comp_a_id, comp_a_metric, comp_b_title, id_b, comp_b_metric):
+def send_discord_notification(comp_a_title, comp_a_id, metric_name_a, comp_b_title, id_b, metric_name_b):
     """Sends a cleanly formatted embed message to your Discord channel."""
-    # Strip any list brackets for clean text presentation in the Discord UI
-    metric_name_a = comp_a_metric[0] if isinstance(comp_a_metric, list) else comp_a_metric
-    metric_name_b = comp_b_metric[0] if isinstance(comp_b_metric, list) else comp_b_metric
-
     payload = {
         "username": "NordicWars Automation",
         "avatar_url": "https://wiseoldman.net",
@@ -122,7 +118,6 @@ def send_discord_notification(comp_a_title, comp_a_id, comp_a_metric, comp_b_tit
 
     try:
         response = requests.post(DISCORD_WEBHOOK_URL, json=payload, timeout=10)
-        # Fixed: Changed floating 'in' statement to clear range-based logical check
         if 200 <= response.status_code < 300:
             logging.info("✅ Discord notification sent successfully!")
         else:
@@ -131,14 +126,14 @@ def send_discord_notification(comp_a_title, comp_a_id, comp_a_metric, comp_b_tit
         logging.error(f"❌ Failed to dispatch Discord Webhook: {e}")
 
 
-def send_creation_request(title, metrics_list):
+def send_creation_request(title, metric_name):
     """Handles the API POST request for a single competition."""
     start_date, end_date = calculate_competition_dates()
     
     payload = {
         "title": f"{title} ({start_date.strftime('%b %d')} - {end_date.strftime('%b %d, %Y')})",
         "metric": "multi_metric",  
-        "metrics": metrics_list, 
+        "metrics": [metric_name],  # Wrapped inside a list container for API compatibility
         "startsAt": start_date.isoformat(),
         "endsAt": end_date.isoformat(),
         "groupId": GROUP_ID,
@@ -150,7 +145,7 @@ def send_creation_request(title, metrics_list):
         "X-API-Key": API_KEY
     }
 
-    logging.info(f"Attempting to create competition: '{payload['title']}' tracking: {metrics_list}")
+    logging.info(f"Attempting to create competition: '{payload['title']}' tracking: {metric_name}")
 
     try:
         url = f"{BASE_URL}/competitions"
@@ -172,17 +167,17 @@ def send_creation_request(title, metrics_list):
 
 def main():
     # 1. Generate two unique individual skills distinct from last week
-    comp_a_skill, comp_b_skill = generate_unique_single_skills()
+    metric_a, metric_b = generate_unique_single_skills()
     
     # 2. Run Competition A with its single random skill
-    title_a, id_a = send_creation_request("SOTW payout 1m A", comp_a_skill)
+    title_a, id_a = send_creation_request("SOTW payout 1m A", metric_a)
     
     # 3. Run Competition B with a different single random skill
-    title_b, id_b = send_creation_request("SOTW payout 1m B", comp_b_skill)
+    title_b, id_b = send_creation_request("SOTW payout 1m B", metric_b)
 
     # 4. If both competitions successfully generated, trigger Discord notification
     if id_a and id_b:
-        send_discord_notification(title_a, id_a, comp_a_skill, title_b, id_b, comp_b_skill)
+        send_discord_notification(title_a, id_a, metric_a, title_b, id_b, metric_b)
 
 
 if __name__ == "__main__":
