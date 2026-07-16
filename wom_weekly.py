@@ -20,7 +20,7 @@ VERIFICATION_CODE = "996-370-037"
 HISTORY_FILE = "wom_history.txt"
 
 # --- DISCORD WEBHOOK URL ---
-DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1526354985950904462/w92ymtbU-qFmnPBdj_9GG5WDW8djFlGKHLYq3w5GNYbTNKBtdvCuAXKiSQImD3JOYSSN"
+DISCORD_WEBHOOK_URL = "https://discord.com"
 
 # --- POOL OF SKILLS TO RANDOMIZE ---
 SKILL_POOL = [
@@ -76,8 +76,8 @@ def generate_unique_single_skills():
 
     # Draw two completely unique metrics from the filtered pool
     selected_skills = random.sample(available_pool, 2)
-    skill_a = selected_skills[0]
-    skill_b = selected_skills[1]
+    skill_a = selected_skills
+    skill_b = selected_skills
     
     # Save selections to history file before returning
     save_current_skills(skill_a, skill_b)
@@ -99,12 +99,12 @@ def send_discord_notification(comp_a_title, comp_a_id, comp_a_metric, comp_b_tit
                 "fields": [
                     {
                         "name": f"🏆 {comp_a_title}",
-                        "value": f"**Tracked Skill:** {comp_a_metric[0].title()}\n🔗 [View Leaderboard](https://wiseoldman.net{comp_a_id})",
+                        "value": f"**Tracked Skill:** {comp_a_metric.title()}\n🔗 [View Leaderboard](https://wiseoldman.net{comp_a_id})",
                         "inline": False
                     },
                     {
                         "name": f"🏆 {comp_b_title}",
-                        "value": f"**Tracked Skill:** {comp_b_metric[0].title()}\n🔗 [View Leaderboard](https://wiseoldman.net{id_b})",
+                        "value": f"**Tracked Skill:** {comp_b_metric.title()}\n🔗 [View Leaderboard](https://wiseoldman.net{id_b})",
                         "inline": False
                     }
                 ],
