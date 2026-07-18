@@ -1,2 +1,2 @@
-hitpoints
-magic
+woodcutting
+fishing
