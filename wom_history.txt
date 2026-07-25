@@ -1,2 +1,2 @@
-woodcutting
-fishing
+prayer
+ranged
