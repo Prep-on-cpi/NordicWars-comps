@@ -20,7 +20,7 @@ VERIFICATION_CODE = "996-370-037"
 HISTORY_FILE = "wom_history.txt"
 
 # --- DISCORD WEBHOOK URL ---
-DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1526354985950904462/w92ymtbU-qFmnPBdj_9GG5WDW8djFlGKHLYq3w5GNYbTNKBtdvCuAXKiSQImD3JOYSSN"
+DISCORD_WEBHOOK_URL = "https://discord.com"
 
 # --- POOL OF SKILLS TO RANDOMIZE ---
 SKILL_POOL = [
@@ -76,6 +76,8 @@ def generate_unique_single_skills():
 
     # Draw two completely unique individual string skills
     selected_skills = random.sample(available_pool, 2)
+    
+    # Extract raw strings from the list format
     skill_a = selected_skills[0]
     skill_b = selected_skills[1]
     
@@ -96,12 +98,12 @@ def send_discord_notification(comp_a_title, comp_a_id, metric_name_a, comp_b_tit
                 "fields": [
                     {
                         "name": f"🏆 {comp_a_title}",
-                        "value": f"**Tracked Skill:** {metric_name_a.title()}\n🔗 [View Leaderboard](https://wiseoldman.net{comp_a_id})",
+                        "value": f"**Tracked Skill:** {str(metric_name_a).title()}\n🔗 [View Leaderboard](https://wiseoldman.net{comp_a_id})",
                         "inline": False
                     },
                     {
                         "name": f"🏆 {comp_b_title}",
-                        "value": f"**Tracked Skill:** {metric_name_b.title()}\n🔗 [View Leaderboard](https://wiseoldman.net{id_b})",
+                        "value": f"**Tracked Skill:** {str(metric_name_b).title()}\n🔗 [View Leaderboard](https://wiseoldman.net{id_b})",
                         "inline": False
                     }
                 ],
@@ -119,18 +121,18 @@ def send_discord_notification(comp_a_title, comp_a_id, metric_name_a, comp_b_tit
             logging.info("✅ Discord notification sent successfully!")
         else:
             logging.error(f"❌ Discord Webhook failed with status: {response.status_code}")
+            logging.error(f"Discord Response text: {response.text}")
     except Exception as e:
         logging.error(f"❌ Failed to dispatch Discord Webhook: {e}")
 
 
 def send_creation_request(title, metric_name):
-    """Handles the API POST request for a single competition using group details."""
+    """Handles the API POST request for a single competition."""
     start_date, end_date = calculate_competition_dates()
     
-    # Correct format for group competition generation
     payload = {
         "title": f"{title} ({start_date.strftime('%b %d')} - {end_date.strftime('%b %d, %Y')})",
-        "metric": metric_name,  
+        "metric": metric_name,  # Clean string value 
         "startsAt": start_date.isoformat(),
         "endsAt": end_date.isoformat(),
         "groupId": GROUP_ID,
@@ -172,7 +174,7 @@ def main():
     # 3. Run Competition B
     title_b, id_b = send_creation_request("SOTW payout 1m B", metric_b)
 
-    # 4. If both competitions successfully generated, trigger Discord notification
+    # 4. Trigger Discord notification
     if id_a and id_b:
         send_discord_notification(title_a, id_a, metric_a, title_b, id_b, metric_b)
     else:
