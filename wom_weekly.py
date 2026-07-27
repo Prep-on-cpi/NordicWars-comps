@@ -62,7 +62,7 @@ def generate_unique_single_skills():
 
     selected_skills = random.sample(available_pool, 2)
     
-    # Correct item assignment from sample list
+    # Extract raw text strings straight out of the sample array
     skill_a = selected_skills[0]
     skill_b = selected_skills[1]
     
@@ -116,10 +116,10 @@ def main():
     res_a = send_creation_request("SOTW payout 1m A", metric_a)
     res_b = send_creation_request("SOTW payout 1m B", metric_b)
 
-    # Initialized structural dictionary object for notification
+    # Initialized message dictionary structure
     embed = {
         "username": "NordicWars Automation",
-        "avatar_url": "https://wiseoldman.net/img/logo.png",
+        "avatar_url": "https://wiseoldman.net",
         "embeds": [{
             "title": "⚙️ Automation Runner Diagnostic ⚙️",
             "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
@@ -127,7 +127,7 @@ def main():
         }]
     }
 
-    # Format Comp A (Fixed: Points properly to index 0 of array fields block)
+    # Format Comp A
     if res_a["success"]:
         embed["embeds"][0]["fields"].append({
             "name": f"🏆 {res_a['title']}",
