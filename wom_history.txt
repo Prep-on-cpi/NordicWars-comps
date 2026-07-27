@@ -1,2 +1,2 @@
-woodcutting
-mining
+ranged
+hitpoints
