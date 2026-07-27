@@ -1,2 +1,2 @@
-runecraft
-prayer
+ranged
+defence
