@@ -20,7 +20,7 @@ VERIFICATION_CODE = "996-370-037"
 HISTORY_FILE = "wom_history.txt"
 
 # --- DISCORD WEBHOOK URL ---
-DISCORD_WEBHOOK_URL = "https://discord.com"
+DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1526354985950904462/w92ymtbU-qFmnPBdj_9GG5WDW8djFlGKHLYq3w5GNYbTNKBtdvCuAXKiSQImD3JOYSSN"
 
 # --- POOL OF SKILLS TO RANDOMIZE ---
 SKILL_POOL = [
@@ -74,15 +74,12 @@ def generate_unique_single_skills():
     if len(available_pool) < 2:
         available_pool = SKILL_POOL
 
-    # Draw two completely unique individual string skills from the filtered pool
+    # Draw two completely unique individual string skills
     selected_skills = random.sample(available_pool, 2)
     skill_a = selected_skills[0]
     skill_b = selected_skills[1]
     
-    # Save selections to history file before returning
     save_current_skills(skill_a, skill_b)
-
-    # Return them packaged as separate single-item lists required by WOM
     return skill_a, skill_b
 
 
@@ -127,17 +124,17 @@ def send_discord_notification(comp_a_title, comp_a_id, metric_name_a, comp_b_tit
 
 
 def send_creation_request(title, metric_name):
-    """Handles the API POST request for a single competition."""
+    """Handles the API POST request for a single competition using group details."""
     start_date, end_date = calculate_competition_dates()
     
+    # Correct format for group competition generation
     payload = {
         "title": f"{title} ({start_date.strftime('%b %d')} - {end_date.strftime('%b %d, %Y')})",
-        "metric": "multi_metric",  
-        "metrics": [metric_name],  # Wrapped inside a list container for API compatibility
+        "metric": metric_name,  
         "startsAt": start_date.isoformat(),
         "endsAt": end_date.isoformat(),
         "groupId": GROUP_ID,
-        "groupVerificationCode": VERIFICATION_CODE,
+        "groupVerificationCode": VERIFICATION_CODE
     }
 
     headers = {
@@ -169,15 +166,17 @@ def main():
     # 1. Generate two unique individual skills distinct from last week
     metric_a, metric_b = generate_unique_single_skills()
     
-    # 2. Run Competition A with its single random skill
+    # 2. Run Competition A
     title_a, id_a = send_creation_request("SOTW payout 1m A", metric_a)
     
-    # 3. Run Competition B with a different single random skill
+    # 3. Run Competition B
     title_b, id_b = send_creation_request("SOTW payout 1m B", metric_b)
 
     # 4. If both competitions successfully generated, trigger Discord notification
     if id_a and id_b:
         send_discord_notification(title_a, id_a, metric_a, title_b, id_b, metric_b)
+    else:
+        logging.error("Could not send Discord alert because competition creation failed.")
 
 
 if __name__ == "__main__":
