@@ -1,2 +1,2 @@
-defence
-runecraft
+ranged
+firemaking
