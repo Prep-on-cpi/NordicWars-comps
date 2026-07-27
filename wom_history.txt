@@ -1,2 +1,2 @@
-crafting
-cooking
+woodcutting
+mining
