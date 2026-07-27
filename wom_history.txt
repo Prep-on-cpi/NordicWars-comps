@@ -1,2 +1,2 @@
-hitpoints
-mining
+woodcutting
+magic
