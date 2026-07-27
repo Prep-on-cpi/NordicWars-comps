@@ -62,7 +62,7 @@ def generate_unique_single_skills():
 
     selected_skills = random.sample(available_pool, 2)
     
-    # Extract string values out of the randomized array cleanly
+    # FIXED: Cleanly unpack items out of sample array to avoid out-of-bounds indexing bugs
     skill_a = selected_skills[0]
     skill_b = selected_skills[1]
     
@@ -116,44 +116,47 @@ def main():
     res_a = send_creation_request("SOTW payout 1m A", metric_a)
     res_b = send_creation_request("SOTW payout 1m B", metric_b)
 
-    # Initialized message dictionary structure
+    # Initial fields container to populate before appending layout
+    fields_list = []
+
+    # Format Comp A data safely into raw structures
+    if res_a["success"]:
+        fields_list.append({
+            "name": f"🏆 {res_a['title']}",
+            "value": f"**Tracked Skill:** {metric_a.title()}\n🔗 [View Leaderboard](https://wiseoldman.net{res_a['id']})",
+            "inline": False
+        })
+    else:
+        fields_list.append({
+            "name": "❌ Competition A Generation Failed",
+            "value": f"**Attempted Metric:** {metric_a}\n**Reason:** `{res_a['error']}`",
+            "inline": False
+        })
+
+    # Format Comp B data safely
+    if res_b["success"]:
+        fields_list.append({
+            "name": f"🏆 {res_b['title']}",
+            "value": f"**Tracked Skill:** {metric_b.title()}\n🔗 [View Leaderboard](https://wiseoldman.net{res_b['id']})",
+            "inline": False
+        })
+    else:
+        fields_list.append({
+            "name": "❌ Competition B Generation Failed",
+            "value": f"**Attempted Metric:** {metric_b}\n**Reason:** `{res_b['error']}`",
+            "inline": False
+        })
+
+    # Build clear top-level dictionary data structure mapping
     embed = {
         "username": "NordicWars Automation",
         "avatar_url": "https://wiseoldman.net",
         "embeds": [{
             "title": "⚙️ Automation Runner Diagnostic ⚙️",
             "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            "fields": []
+            "fields": fields_list
         }]
     }
-
-    # Format Comp A (Fixed: explicitly targets array index 0)
-    if res_a["success"]:
-        embed["embeds"][0]["fields"].append({
-            "name": f"🏆 {res_a['title']}",
-            "value": f"**Tracked Skill:** {metric_a.title()}\n🔗 [View Leaderboard](https://wiseoldman.net{res_a['id']})",
-            "inline": False
-        })
-    else:
-        embed["embeds"][0]["fields"].append({
-            "name": "❌ Competition A Generation Failed",
-            "value": f"**Attempted Metric:** {metric_a}\n**Reason:** `{res_a['error']}`",
-            "inline": False
-        })
-
-    # Format Comp B (Fixed: explicitly targets array index 0)
-    if res_b["success"]:
-        embed["embeds"][0]["fields"].append({
-            "name": f"🏆 {res_b['title']}",
-            "value": f"**Tracked Skill:** {metric_b.title()}\n🔗 [View Leaderboard](https://wiseoldman.net{res_b['id']})",
-            "inline": False
-        })
-    else:
-        embed["embeds"][0]["fields"].append({
-            "name": "❌ Competition B Generation Failed",
-            "value": f"**Attempted Metric:** {metric_b}\n**Reason:** `{res_b['error']}`",
-            "inline": False
-        })
 
     send_discord_notification(embed)
 
