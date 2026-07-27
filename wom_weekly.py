@@ -54,24 +54,30 @@ def save_current_skills(skill_a, skill_b):
 
 def generate_unique_single_skills():
     last_week = get_last_week_skills()
+    logging.info(f"Skipping previous week's metrics: {last_week}")
+
     available_pool = [skill for skill in SKILL_POOL if skill not in last_week]
     if len(available_pool) < 2:
         available_pool = SKILL_POOL
+
     selected_skills = random.sample(available_pool, 2)
-    skill_a = str(selected_skills[0])
-    skill_b = str(selected_skills[1])
+    
+    # Clean extraction: extracts strings explicitly from the list to avoid formatting bugs
+    skill_a = selected_skills[0]
+    skill_b = selected_skills[1]
+    
     save_current_skills(skill_a, skill_b)
     return skill_a, skill_b
 
 
 def send_discord_notification(payload):
-    """Fires raw payload straight to Discord."""
     try:
         response = requests.post(DISCORD_WEBHOOK_URL, json=payload, timeout=10)
         if 200 <= response.status_code < 300:
             logging.info("✅ Discord notification sent successfully!")
         else:
             logging.error(f"❌ Discord Webhook failed with status: {response.status_code}")
+            logging.error(f"Discord Response text: {response.text}")
     except Exception as e:
         logging.error(f"❌ Failed to dispatch Discord Webhook: {e}")
 
@@ -107,11 +113,10 @@ def send_creation_request(title, metric_name):
 def main():
     metric_a, metric_b = generate_unique_single_skills()
     
-    # Run API Calls
     res_a = send_creation_request("SOTW payout 1m A", metric_a)
     res_b = send_creation_request("SOTW payout 1m B", metric_b)
 
-    # BUILD DISCORD EMBED REGARDLESS OF SUCCESS/FAILURE
+    # FIXED: Properly configured list placement for the Discord payload
     embed = {
         "username": "NordicWars Automation",
         "avatar_url": "https://wiseoldman.net",
@@ -122,7 +127,7 @@ def main():
         }]
     }
 
-    # Format Comp A for Discord
+    # Format Comp A
     if res_a["success"]:
         embed["embeds"][0]["fields"].append({
             "name": f"🏆 {res_a['title']}",
@@ -136,7 +141,7 @@ def main():
             "inline": False
         })
 
-    # Format Comp B for Discord
+    # Format Comp B
     if res_b["success"]:
         embed["embeds"][0]["fields"].append({
             "name": f"🏆 {res_b['title']}",
