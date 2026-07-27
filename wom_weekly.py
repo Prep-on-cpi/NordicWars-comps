@@ -64,7 +64,7 @@ def save_current_skills(skill_a, skill_b):
 
 
 def generate_unique_single_skills():
-    """Selects two single metrics that don't match each other or last week."""
+    """Selects two single string metrics that don't match each other or last week."""
     last_week = get_last_week_skills()
     logging.info(f"Skipping previous week's metrics: {last_week}")
 
@@ -77,9 +77,9 @@ def generate_unique_single_skills():
     # Draw two completely unique individual string skills
     selected_skills = random.sample(available_pool, 2)
     
-    # Extract raw strings from the list format
-    skill_a = selected_skills[0]
-    skill_b = selected_skills[1]
+    # Crucial Fix: Explicitly extract the plain text strings out of the sample lists
+    skill_a = str(selected_skills[0])
+    skill_b = str(selected_skills[1])
     
     save_current_skills(skill_a, skill_b)
     return skill_a, skill_b
@@ -98,12 +98,12 @@ def send_discord_notification(comp_a_title, comp_a_id, metric_name_a, comp_b_tit
                 "fields": [
                     {
                         "name": f"🏆 {comp_a_title}",
-                        "value": f"**Tracked Skill:** {str(metric_name_a).title()}\n🔗 [View Leaderboard](https://wiseoldman.net{comp_a_id})",
+                        "value": f"**Tracked Skill:** {metric_name_a.title()}\n🔗 [View Leaderboard](https://wiseoldman.net{comp_a_id})",
                         "inline": False
                     },
                     {
                         "name": f"🏆 {comp_b_title}",
-                        "value": f"**Tracked Skill:** {str(metric_name_b).title()}\n🔗 [View Leaderboard](https://wiseoldman.net{id_b})",
+                        "value": f"**Tracked Skill:** {metric_name_b.title()}\n🔗 [View Leaderboard](https://wiseoldman.net{id_b})",
                         "inline": False
                     }
                 ],
@@ -127,12 +127,15 @@ def send_discord_notification(comp_a_title, comp_a_id, metric_name_a, comp_b_tit
 
 
 def send_creation_request(title, metric_name):
-    """Handles the API POST request for a single competition."""
+    """Handles the API POST request for a single competition using group details."""
     start_date, end_date = calculate_competition_dates()
     
+    # Formulated payload title layout matching user request
+    full_title = f"{title} ({start_date.strftime('%b %d')} - {end_date.strftime('%b %d, %Y')})"
+    
     payload = {
-        "title": f"{title} ({start_date.strftime('%b %d')} - {end_date.strftime('%b %d, %Y')})",
-        "metric": metric_name,  # Clean string value 
+        "title": full_title,
+        "metric": metric_name,  
         "startsAt": start_date.isoformat(),
         "endsAt": end_date.isoformat(),
         "groupId": GROUP_ID,
@@ -144,7 +147,7 @@ def send_creation_request(title, metric_name):
         "X-API-Key": API_KEY
     }
 
-    logging.info(f"Attempting to create competition: '{payload['title']}' tracking: {metric_name}")
+    logging.info(f"Attempting to create competition: '{full_title}' tracking: {metric_name}")
 
     try:
         url = f"{BASE_URL}/competitions"
@@ -174,7 +177,7 @@ def main():
     # 3. Run Competition B
     title_b, id_b = send_creation_request("SOTW payout 1m B", metric_b)
 
-    # 4. Trigger Discord notification
+    # 4. Trigger Discord notification if requests resolved
     if id_a and id_b:
         send_discord_notification(title_a, id_a, metric_a, title_b, id_b, metric_b)
     else:
