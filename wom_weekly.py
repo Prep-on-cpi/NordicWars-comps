@@ -14,12 +14,10 @@ logging.basicConfig(
 
 # --- LIVE CONFIGURATION VARIABLES ---
 BASE_URL = "https://wiseoldman.net"
-API_KEY = "ml5jtxgo6m5mzbu0bwvhserf"  # Fixed API key for NordicWars comps
+API_KEY = "ml5jtxgo6m5mzbu0bwvhserf"
 GROUP_ID = 7753  
 VERIFICATION_CODE = "996-370-037"  
 HISTORY_FILE = "wom_history.txt"
-
-# --- DISCORD WEBHOOK URL ---
 DISCORD_WEBHOOK_URL = "https://discord.com"
 
 # --- POOL OF SKILLS TO RANDOMIZE ---
@@ -31,26 +29,18 @@ SKILL_POOL = [
 
 
 def calculate_competition_dates():
-    """Calculates the upcoming Saturday 10 PM to next Saturday 9:59 PM UTC."""
     now = datetime.datetime.now(datetime.timezone.utc)
-
-    # Saturday is weekday 5
     days_until_saturday = (5 - now.weekday()) % 7
-
-    # If today is Saturday and it's already past 10 PM UTC, schedule for next week
     if days_until_saturday == 0 and now.hour >= 22:
         days_until_saturday = 7
-
     start_date = (now + datetime.timedelta(days=days_until_saturday)).replace(
         hour=22, minute=0, second=0, microsecond=0
     )
     end_date = start_date + datetime.timedelta(days=6, hours=23, minutes=59)
-
     return start_date, end_date
 
 
 def get_last_week_skills():
-    """Reads the previously tracked skills from a text file."""
     if not os.path.exists(HISTORY_FILE):
         return []
     with open(HISTORY_FILE, "r") as f:
@@ -58,79 +48,36 @@ def get_last_week_skills():
 
 
 def save_current_skills(skill_a, skill_b):
-    """Saves the chosen skills to a text file for next week's check."""
     with open(HISTORY_FILE, "w") as f:
         f.write(f"{skill_a}\n{skill_b}\n")
 
 
 def generate_unique_single_skills():
-    """Selects two single string metrics that don't match each other or last week."""
     last_week = get_last_week_skills()
-    logging.info(f"Skipping previous week's metrics: {last_week}")
-
-    # Remove last week's skills from the available pool
     available_pool = [skill for skill in SKILL_POOL if skill not in last_week]
-
     if len(available_pool) < 2:
         available_pool = SKILL_POOL
-
-    # Draw two completely unique individual string skills
     selected_skills = random.sample(available_pool, 2)
-    
-    # Crucial Fix: Explicitly extract the plain text strings out of the sample lists
     skill_a = str(selected_skills[0])
     skill_b = str(selected_skills[1])
-    
     save_current_skills(skill_a, skill_b)
     return skill_a, skill_b
 
 
-def send_discord_notification(comp_a_title, comp_a_id, metric_name_a, comp_b_title, id_b, metric_name_b):
-    """Sends a cleanly formatted embed message to your Discord channel."""
-    payload = {
-        "username": "NordicWars Automation",
-        "avatar_url": "https://wiseoldman.net",
-        "embeds": [
-            {
-                "title": "⚔️ Weekly Clan Competitions Created! ⚔️",
-                "description": "Two new Skill of the Week (SOTW) competitions have been automatically scheduled. They will go live this **Saturday at 10:00 PM UTC**!",
-                "color": 15158332,  # Crimson color code
-                "fields": [
-                    {
-                        "name": f"🏆 {comp_a_title}",
-                        "value": f"**Tracked Skill:** {metric_name_a.title()}\n🔗 [View Leaderboard](https://wiseoldman.net{comp_a_id})",
-                        "inline": False
-                    },
-                    {
-                        "name": f"🏆 {comp_b_title}",
-                        "value": f"**Tracked Skill:** {metric_name_b.title()}\n🔗 [View Leaderboard](https://wiseoldman.net{id_b})",
-                        "inline": False
-                    }
-                ],
-                "footer": {
-                    "text": "Indefinite Automation Pipeline • Powered by Wise Old Man API"
-                },
-                "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
-            }
-        ]
-    }
-
+def send_discord_notification(payload):
+    """Fires raw payload straight to Discord."""
     try:
         response = requests.post(DISCORD_WEBHOOK_URL, json=payload, timeout=10)
         if 200 <= response.status_code < 300:
             logging.info("✅ Discord notification sent successfully!")
         else:
             logging.error(f"❌ Discord Webhook failed with status: {response.status_code}")
-            logging.error(f"Discord Response text: {response.text}")
     except Exception as e:
         logging.error(f"❌ Failed to dispatch Discord Webhook: {e}")
 
 
 def send_creation_request(title, metric_name):
-    """Handles the API POST request for a single competition using group details."""
     start_date, end_date = calculate_competition_dates()
-    
-    # Formulated payload title layout matching user request
     full_title = f"{title} ({start_date.strftime('%b %d')} - {end_date.strftime('%b %d, %Y')})"
     
     payload = {
@@ -142,46 +89,68 @@ def send_creation_request(title, metric_name):
         "groupVerificationCode": VERIFICATION_CODE
     }
 
-    headers = {
-        "Content-Type": "application/json",
-        "X-API-Key": API_KEY
-    }
-
+    headers = {"Content-Type": "application/json", "X-API-Key": API_KEY}
     logging.info(f"Attempting to create competition: '{full_title}' tracking: {metric_name}")
 
     try:
         url = f"{BASE_URL}/competitions"
         response = requests.post(url, json=payload, headers=headers, timeout=15)
-
         if response.status_code == 201:
             data = response.json()
-            logging.info(f"✅ Created successfully: {data['title']}")
-            return data['title'], data['id']
+            return {"success": True, "title": data['title'], "id": data['id']}
         else:
-            logging.error(f"❌ API Rejected '{title}'. Status: {response.status_code}")
-            logging.error(f"Response: {response.text}")
-            return None, None
-
+            return {"success": False, "error": response.text}
     except requests.exceptions.RequestException as e:
-        logging.error(f"❌ Network error occurred for '{title}': {e}")
-        return None, None
+        return {"success": False, "error": str(e)}
 
 
 def main():
-    # 1. Generate two unique individual skills distinct from last week
     metric_a, metric_b = generate_unique_single_skills()
     
-    # 2. Run Competition A
-    title_a, id_a = send_creation_request("SOTW payout 1m A", metric_a)
-    
-    # 3. Run Competition B
-    title_b, id_b = send_creation_request("SOTW payout 1m B", metric_b)
+    # Run API Calls
+    res_a = send_creation_request("SOTW payout 1m A", metric_a)
+    res_b = send_creation_request("SOTW payout 1m B", metric_b)
 
-    # 4. Trigger Discord notification if requests resolved
-    if id_a and id_b:
-        send_discord_notification(title_a, id_a, metric_a, title_b, id_b, metric_b)
+    # BUILD DISCORD EMBED REGARDLESS OF SUCCESS/FAILURE
+    embed = {
+        "username": "NordicWars Automation",
+        "avatar_url": "https://wiseoldman.net",
+        "embeds": [{
+            "title": "⚙️ Automation Runner Diagnostic ⚙️",
+            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "fields": []
+        }]
+    }
+
+    # Format Comp A for Discord
+    if res_a["success"]:
+        embed["embeds"][0]["fields"].append({
+            "name": f"🏆 {res_a['title']}",
+            "value": f"**Tracked Skill:** {metric_a.title()}\n🔗 [View Leaderboard](https://wiseoldman.net{res_a['id']})",
+            "inline": False
+        })
     else:
-        logging.error("Could not send Discord alert because competition creation failed.")
+        embed["embeds"][0]["fields"].append({
+            "name": "❌ Competition A Generation Failed",
+            "value": f"**Attempted Metric:** {metric_a}\n**Reason:** `{res_a['error']}`",
+            "inline": False
+        })
+
+    # Format Comp B for Discord
+    if res_b["success"]:
+        embed["embeds"][0]["fields"].append({
+            "name": f"🏆 {res_b['title']}",
+            "value": f"**Tracked Skill:** {metric_b.title()}\n🔗 [View Leaderboard](https://wiseoldman.net{res_b['id']})",
+            "inline": False
+        })
+    else:
+        embed["embeds"][0]["fields"].append({
+            "name": "❌ Competition B Generation Failed",
+            "value": f"**Attempted Metric:** {metric_b}\n**Reason:** `{res_b['error']}`",
+            "inline": False
+        })
+
+    send_discord_notification(embed)
 
 
 if __name__ == "__main__":
