@@ -62,7 +62,7 @@ def generate_unique_single_skills():
 
     selected_skills = random.sample(available_pool, 2)
     
-    # Extract raw text strings straight out of the sample array
+    # Extract string values out of the randomized array cleanly
     skill_a = selected_skills[0]
     skill_b = selected_skills[1]
     
@@ -119,7 +119,7 @@ def main():
     # Initialized message dictionary structure
     embed = {
         "username": "NordicWars Automation",
-        "avatar_url": "https://wiseoldman.net/img/logo.png",
+        "avatar_url": "https://wiseoldman.net",
         "embeds": [{
             "title": "⚙️ Automation Runner Diagnostic ⚙️",
             "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
@@ -127,7 +127,7 @@ def main():
         }]
     }
 
-    # Format Comp A (Fixed: Points properly to list index [0] to avoid TypeErrors)
+    # Format Comp A (Fixed: explicitly targets array index 0)
     if res_a["success"]:
         embed["embeds"][0]["fields"].append({
             "name": f"🏆 {res_a['title']}",
@@ -141,7 +141,7 @@ def main():
             "inline": False
         })
 
-    # Format Comp B
+    # Format Comp B (Fixed: explicitly targets array index 0)
     if res_b["success"]:
         embed["embeds"][0]["fields"].append({
             "name": f"🏆 {res_b['title']}",
