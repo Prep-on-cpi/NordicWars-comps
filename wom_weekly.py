@@ -119,7 +119,7 @@ def main():
     # Initialized message dictionary structure
     embed = {
         "username": "NordicWars Automation",
-        "avatar_url": "https://wiseoldman.net",
+        "avatar_url": "https://wiseoldman.net/img/logo.png",
         "embeds": [{
             "title": "⚙️ Automation Runner Diagnostic ⚙️",
             "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
@@ -127,7 +127,7 @@ def main():
         }]
     }
 
-    # Format Comp A
+    # Format Comp A (Fixed: Points properly to list index [0] to avoid TypeErrors)
     if res_a["success"]:
         embed["embeds"][0]["fields"].append({
             "name": f"🏆 {res_a['title']}",
