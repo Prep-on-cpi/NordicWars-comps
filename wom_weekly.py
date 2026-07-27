@@ -18,7 +18,7 @@ API_KEY = "ml5jtxgo6m5mzbu0bwvhserf"
 GROUP_ID = 7753  
 VERIFICATION_CODE = "996-370-037"  
 HISTORY_FILE = "wom_history.txt"
-DISCORD_WEBHOOK_URL = "https://discord.com"
+DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1526354985950904462/w92ymtbU-qFmnPBdj_9GG5WDW8djFlGKHLYq3w5GNYbTNKBtdvCuAXKiSQImD3JOYSSN"
 
 # --- POOL OF SKILLS TO RANDOMIZE ---
 SKILL_POOL = [
