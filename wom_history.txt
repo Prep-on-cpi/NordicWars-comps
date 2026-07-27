@@ -1,2 +1,2 @@
-smithing
-cooking
+runecraft
+prayer
