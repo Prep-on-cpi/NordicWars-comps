@@ -1,2 +1,2 @@
-runecraft
-mining
+defence
+smithing
