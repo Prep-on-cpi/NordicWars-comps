@@ -1,2 +1,2 @@
-prayer
-attack
+smithing
+crafting
